@@ -95,3 +95,11 @@ coverage.xml
 /htmlcov/
 
 **/UserSettings/*
+
+# Ignore Unity build files across all subfolders
+**/[Ll]ibrary/
+**/[Tt]emp/
+**/[Ll]ogs/
+**/[Oo]bj/
+**/[Bb]uild/
+**/[Bb]uilds/
