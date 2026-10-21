@@ -1,3 +1,6 @@
 .venv/
-data/run_journal.csv
-data/runs/*
+.env
+*.env
+__pycache__
+*/__pycache__
+*.db
