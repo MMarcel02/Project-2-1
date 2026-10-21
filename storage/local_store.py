@@ -7,7 +7,13 @@ from run_data_model import RunData
 
 CURR_DIR = Path(__file__).parent
 DB_PATH = CURR_DIR / "runs.db"
-SCHEMA_PATH = CURR_DIR / "supabase" / "migrations" / "runs.sql"
+SCHEMA_DIR = CURR_DIR / "supabase" / "migrations"
+
+
+def get_latest_schema() -> str:
+    schemas = sorted(SCHEMA_DIR.glob("*.sql"))
+    latest_schema = schemas[-1]
+    return latest_schema.read_text()
 
 
 def get_db(path: Path = DB_PATH) -> sqlite3.Connection:
@@ -19,8 +25,9 @@ def get_db(path: Path = DB_PATH) -> sqlite3.Connection:
 
 def init_db(conn: sqlite3.Connection):
     # only dropping rn as testing will remove later
-    conn.execute("DROP TABLE IF EXISTS runs")
-    conn.execute(SCHEMA_PATH.read_text())
+    # conn.execute("DROP TABLE IF EXISTS runs")
+
+    conn.execute(get_latest_schema())
 
 
 def insert_run(conn: sqlite3.Connection, run_data: RunData):
@@ -31,6 +38,7 @@ def insert_run(conn: sqlite3.Connection, run_data: RunData):
     conn.execute(
         f"INSERT INTO runs ({cols}) VALUES ({placeholders})", list(data.values())
     )
+    conn.commit()
 
 
 def get_pending_runs(conn: sqlite3.Connection):
@@ -39,4 +47,5 @@ def get_pending_runs(conn: sqlite3.Connection):
 
 
 def mark_synced(conn: sqlite3.Connection, sync_time: float, run_id: str):
-    conn.execute("UPDATE runs SET synced_at = ? WHERE id = ?", sync_time, run_id)
+    conn.execute("UPDATE runs SET synced_at = ? WHERE id = ?", (sync_time, run_id))
+    conn.commit()

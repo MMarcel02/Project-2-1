@@ -1,6 +1,7 @@
 import os
 import sqlite3
 import sys
+import uuid
 
 import cloud_store
 import local_store
@@ -44,7 +45,9 @@ def sync_with_cloud(sqlite: sqlite3.Connection, supabase: Client):
 # init once
 name, sqlite, supabase = init()
 # data gathering loop that fills run_data
-run_data = run_data_model.RunData("1", name, run_data_model.ExperimentType("test_only"))
+run_data = run_data_model.RunData(
+    str(uuid.uuid4()), name, run_data_model.ExperimentType("test_only")
+)
 # immediately save run data locally
 local_store.insert_run(sqlite, run_data)
 # on each uploading try can try to also sync all unuploaded stuff
