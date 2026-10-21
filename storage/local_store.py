@@ -27,7 +27,7 @@ def init_db(conn: sqlite3.Connection):
     # only dropping rn as testing will remove later
     # conn.execute("DROP TABLE IF EXISTS runs")
 
-    conn.execute(get_latest_schema())
+    conn.executescript(get_latest_schema())
 
 
 def insert_run(conn: sqlite3.Connection, run_data: RunData):
