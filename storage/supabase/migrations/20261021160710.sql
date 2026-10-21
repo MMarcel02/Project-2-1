@@ -1,0 +1,8 @@
+DROP TABLE IF EXISTS runs;
+
+CREATE TABLE IF NOT EXISTS runs (
+    id TEXT PRIMARY KEY,
+    name TEXT NOT NULL,
+    experiment_type TEXT NOT NULL,
+    synced_at BIGINT DEFAULT NULL
+);
