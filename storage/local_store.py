@@ -46,6 +46,6 @@ def get_pending_runs(conn: sqlite3.Connection):
     return [dict(row) for row in rows]
 
 
-def mark_synced(conn: sqlite3.Connection, sync_time: float, run_id: str):
+def mark_synced(conn: sqlite3.Connection, sync_time: int, run_id: str):
     conn.execute("UPDATE runs SET synced_at = ? WHERE id = ?", (sync_time, run_id))
     conn.commit()

@@ -16,7 +16,7 @@ def get_db() -> Client:
 
 
 def insert_run(client: Client, run_data: dict) -> float | None:
-    synced_time = time.time()
+    synced_time = int(time.time())
     run_data["synced_at"] = synced_time
     try:
         client.table("runs").upsert(run_data).execute()
