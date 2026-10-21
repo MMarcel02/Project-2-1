@@ -15,11 +15,11 @@ def get_db() -> Client:
     return create_client(url, key)
 
 
-def insert_run(client: Client, run_data: dict) -> float | None:
+def insert_run(client: Client, table_name: str, run_data: dict) -> int | None:
     synced_time = int(time.time())
     run_data["synced_at"] = synced_time
     try:
-        client.table("runs").upsert(run_data).execute()
+        client.table(table_name).upsert(run_data).execute()
     except Exception as e:
         print(f"Supabase upload failed: {e}")
     else:

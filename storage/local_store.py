@@ -3,7 +3,7 @@ import time
 from dataclasses import asdict
 from pathlib import Path
 
-from run_data_model import RunData
+from .run_data_model import RunData
 
 CURR_DIR = Path(__file__).parent
 DB_PATH = CURR_DIR / "runs.db"
@@ -24,28 +24,28 @@ def get_db(path: Path = DB_PATH) -> sqlite3.Connection:
 
 
 def init_db(conn: sqlite3.Connection):
-    # only dropping rn as testing will remove later
-    # conn.execute("DROP TABLE IF EXISTS runs")
-
     conn.executescript(get_latest_schema())
 
 
-def insert_run(conn: sqlite3.Connection, run_data: RunData):
+def insert_run(conn: sqlite3.Connection, table_name: str, run_data: RunData):
     data = asdict(run_data)
     cols = ", ".join(data.keys())
     placeholders = ", ".join(["?"] * len(data))
 
     conn.execute(
-        f"INSERT INTO runs ({cols}) VALUES ({placeholders})", list(data.values())
+        f"INSERT INTO {table_name} ({cols}) VALUES ({placeholders})",
+        list(data.values()),
     )
     conn.commit()
 
 
-def get_pending_runs(conn: sqlite3.Connection):
-    rows = conn.execute("SELECT * FROM runs WHERE synced_at IS NULL")
+def get_pending_runs(conn: sqlite3.Connection, table_name: str):
+    rows = conn.execute(f"SELECT * FROM {table_name} WHERE synced_at IS NULL")
     return [dict(row) for row in rows]
 
 
-def mark_synced(conn: sqlite3.Connection, sync_time: int, run_id: str):
-    conn.execute("UPDATE runs SET synced_at = ? WHERE id = ?", (sync_time, run_id))
+def mark_synced(conn: sqlite3.Connection, table_name: str, sync_time: int, run_id: str):
+    conn.execute(
+        f"UPDATE {table_name} SET synced_at = ? WHERE id = ?", (sync_time, run_id)
+    )
     conn.commit()
