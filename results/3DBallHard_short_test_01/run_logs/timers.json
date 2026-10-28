@@ -1,0 +1,42 @@
+{
+    "name": "root",
+    "metadata": {
+        "timer_format_version": "0.1.0",
+        "start_time_seconds": "1792764519",
+        "python_version": "3.10.11 (tags/v3.10.11:7d4cc5a, Apr  5 2023, 00:38:17) [MSC v.1929 64 bit (AMD64)]",
+        "command_line_arguments": "C:\\Projects\\Computer Science Projects\\Project-2-1\\.venv\\Scripts\\mlagents-learn .\\ml-agents\\config\\ppo\\3DBallHard_short_test.yaml --run-id=3DBallHard_short_test_01",
+        "mlagents_version": "1.0.0",
+        "mlagents_envs_version": "1.0.0",
+        "communication_protocol_version": "1.5.0",
+        "pytorch_version": "2.0.1+cpu",
+        "numpy_version": "1.23.5",
+        "end_time_seconds": "1792764586"
+    },
+    "total": 66.33233170001768,
+    "count": 1,
+    "self": 0.01418810011819005,
+    "children": {
+        "run_training.setup": {
+            "total": 0.22848900000099093,
+            "count": 1,
+            "self": 0.22848900000099093
+        },
+        "TrainerController.start_learning": {
+            "total": 66.0896545998985,
+            "count": 1,
+            "self": 0.00026199989952147007,
+            "children": {
+                "TrainerController._reset_env": {
+                    "total": 66.08936490002088,
+                    "count": 1,
+                    "self": 66.08936490002088
+                },
+                "TrainerController._save_models": {
+                    "total": 2.7699978090822697e-05,
+                    "count": 1,
+                    "self": 2.7699978090822697e-05
+                }
+            }
+        }
+    }
+}

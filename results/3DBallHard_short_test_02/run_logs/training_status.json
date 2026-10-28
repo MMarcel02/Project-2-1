@@ -1,0 +1,29 @@
+{
+    "3DBallHard": {
+        "checkpoints": [
+            {
+                "steps": 12003,
+                "file_path": "results\\3DBallHard_short_test_02\\3DBallHard\\3DBallHard-12003.onnx",
+                "reward": 1.2127167390720464,
+                "creation_time": 1792764722.124559,
+                "auxillary_file_paths": [
+                    "results\\3DBallHard_short_test_02\\3DBallHard\\3DBallHard-12003.pt"
+                ]
+            }
+        ],
+        "final_checkpoint": {
+            "steps": 12003,
+            "file_path": "results\\3DBallHard_short_test_02\\3DBallHard.onnx",
+            "reward": 1.2127167390720464,
+            "creation_time": 1792764722.124559,
+            "auxillary_file_paths": [
+                "results\\3DBallHard_short_test_02\\3DBallHard\\3DBallHard-12003.pt"
+            ]
+        }
+    },
+    "metadata": {
+        "stats_format_version": "0.3.0",
+        "mlagents_version": "1.0.0",
+        "torch_version": "2.0.1+cpu"
+    }
+}
