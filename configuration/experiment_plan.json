@@ -1,0 +1,92 @@
+[
+    {
+        "experiment_id": 1,
+        "status": "Awaiting execution",
+        "hyperparameters": {
+            "learning_rate": 0.001,
+            "batch_size": 64,
+            "beta": 0.01
+        }
+    },
+    {
+        "experiment_id": 2,
+        "status": "Awaiting execution",
+        "hyperparameters": {
+            "learning_rate": 0.0001,
+            "batch_size": 120,
+            "beta": 0.001
+        }
+    },
+    {
+        "experiment_id": 3,
+        "status": "Awaiting execution",
+        "hyperparameters": {
+            "learning_rate": 0.0001,
+            "batch_size": 64,
+            "beta": 0.001
+        }
+    },
+    {
+        "experiment_id": 4,
+        "status": "Awaiting execution",
+        "hyperparameters": {
+            "learning_rate": 0.001,
+            "batch_size": 120,
+            "beta": 0.01
+        }
+    },
+    {
+        "experiment_id": 5,
+        "status": "Awaiting execution",
+        "hyperparameters": {
+            "learning_rate": 0.0001,
+            "batch_size": 256,
+            "beta": 0.01
+        }
+    },
+    {
+        "experiment_id": 6,
+        "status": "Awaiting execution",
+        "hyperparameters": {
+            "learning_rate": 0.0001,
+            "batch_size": 256,
+            "beta": 0.005
+        }
+    },
+    {
+        "experiment_id": 7,
+        "status": "Awaiting execution",
+        "hyperparameters": {
+            "learning_rate": 0.001,
+            "batch_size": 120,
+            "beta": 0.001
+        }
+    },
+    {
+        "experiment_id": 8,
+        "status": "Awaiting execution",
+        "hyperparameters": {
+            "learning_rate": 0.0001,
+            "batch_size": 120,
+            "beta": 0.005
+        }
+    },
+    {
+        "experiment_id": 9,
+        "status": "Awaiting execution",
+        "hyperparameters": {
+            "learning_rate": 0.001,
+            "batch_size": 256,
+            "beta": 0.005
+        }
+    },
+    {
+        "experiment_id": 10,
+        "status": "Awaiting execution",
+        "hyperparameters": {
+            "learning_rate": 0.0003,
+            "batch_size": 256,
+            "beta": 0.01
+        }
+    }
+]

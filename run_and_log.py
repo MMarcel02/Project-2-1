@@ -18,6 +18,13 @@ from storage import local_store, run_data_model, storage_scripts
 from dotenv import load_dotenv
 from storage import local_store
 
+from configuration.generate_config import (
+    get_next_experiment,
+    generate_config,
+    update_experiment_status,
+    generate_experiment_plan
+)
+
 #Configuration
 ROOT = Path(__file__).resolve().parent
 RESULTS_DIRECTORY = ROOT / "results"
@@ -26,10 +33,9 @@ load_dotenv(ROOT / ".env")
 
 CONFIG_PATH = (
     ROOT
-    / "ml-agents"
-    / "config"
-    / "ppo"
-    / "3DBallHard.yaml"
+    / "configuration"
+    / "generated_configs"
+    / "3DBallHard_current.yaml"
     # TODO: Switch to 3DBallHard.yaml for the full experiments
 )
 
@@ -225,7 +231,12 @@ def read_process_resources(process):
         return None
 
 
-def run_training():
+def run_training(experiment):
+
+    experiment_id = experiment["experiment_id"]
+    update_experiment_status(experiment_id=experiment_id, new_status="Executing")
+    generate_config(**experiment["hyperparameters"])
+
     run_id = (
         f"3DBallHard_"
         f"{datetime.now(timezone.utc).strftime('%Y%m%d_%H%M%S')}_"
@@ -241,9 +252,11 @@ def run_training():
         "--timeout-wait=180",
     ]
 
+
     print(f"Beginning training run: {run_id}", flush=True)
     print(f"Operator: {OPERATOR}", flush=True)
     print(f"Machine: {MACHINE}", flush=True)
+    print(f"Experiment ID: {experiment}")
     print("When prompted, press play in Unity", flush=True)
 
     start_time = time.perf_counter()
@@ -322,6 +335,8 @@ def run_training():
     print(f"Training advancement: {timing['training_advance_seconds']:.2f} seconds")
     print(f"Completed at: {completed_at}")
 
+    
+
     return {
         "run_id": run_id,
         "operator": OPERATOR,
@@ -351,12 +366,16 @@ def main():
 
     print(f"Initialized storage for operator: {name} on machine: {machine}")
 
+    #Generate experiment plan
+    generate_experiment_plan()
+
     #execute training and automatically collect all runtime and hardware telemetry
-        
+    next_experiment = get_next_experiment()
     try:
-        metrics = run_training()
+        metrics = run_training(next_experiment)
     except Exception as e:
         print(f"Training or data collection failed: {e}")
+        update_experiment_status(next_experiment["experiment_id"], "Failure")
         sqlite.close()
         return
 
@@ -467,6 +486,8 @@ def main():
         print(f"Cloud sync skipped/failed (offline mode): {e}")
 
     sqlite.close()
+
+
 
 
 if __name__ == "__main__":
