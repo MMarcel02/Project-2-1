@@ -36,11 +36,12 @@ CONFIG_PATH = (
     / "configuration"
     / "generated_configs"
     / "3DBallHard_current.yaml"
-    # TODO: Switch to 3DBallHard.yaml for the full experiments
 )
 
 OPERATOR = os.environ["NAME"]
 MACHINE = os.environ["MACHINE"]
+
+MULTIPLE_EXPERIMENTS = True
 
 
 
@@ -232,10 +233,10 @@ def read_process_resources(process):
 
 
 def run_training(experiment):
-
-    experiment_id = experiment["experiment_id"]
-    update_experiment_status(experiment_id=experiment_id, new_status="Executing")
-    generate_config(**experiment["hyperparameters"])
+    if experiment is not None:
+        experiment_id = experiment["experiment_id"]
+        update_experiment_status(experiment_id=experiment_id, new_status="Executing")
+        generate_config(**experiment["hyperparameters"])
 
     run_id = (
         f"3DBallHard_"
@@ -256,7 +257,7 @@ def run_training(experiment):
     print(f"Beginning training run: {run_id}", flush=True)
     print(f"Operator: {OPERATOR}", flush=True)
     print(f"Machine: {MACHINE}", flush=True)
-    print(f"Experiment ID: {experiment}")
+    print(f"Experiment: {experiment}")
     print("When prompted, press play in Unity", flush=True)
 
     start_time = time.perf_counter()
@@ -367,17 +368,31 @@ def main():
     print(f"Initialized storage for operator: {name} on machine: {machine}")
 
     #Generate experiment plan
-    generate_experiment_plan()
+    if MULTIPLE_EXPERIMENTS:
+        generate_experiment_plan()
 
     #execute training and automatically collect all runtime and hardware telemetry
-    next_experiment = get_next_experiment()
-    try:
-        metrics = run_training(next_experiment)
-    except Exception as e:
-        print(f"Training or data collection failed: {e}")
-        update_experiment_status(next_experiment["experiment_id"], "Failure")
-        sqlite.close()
-        return
+    while True:
+        if MULTIPLE_EXPERIMENTS:
+            experiment = get_next_experiment()
+
+            if experiment is None:
+                print(f"All experiments completed")
+                break
+
+        else:
+            experiment = None
+
+        try:
+            metrics = run_training(experiment)
+        except Exception as e:
+            print(f"Training or data collection failed: {e}")
+            update_experiment_status(experiment["experiment_id"], "Failure")
+            sqlite.close()
+            return
+
+        if not MULTIPLE_EXPERIMENTS:
+            break
 
     #calculate step throughput safely
     max_steps = metrics.get("max_steps", 50000)
