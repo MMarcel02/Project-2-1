@@ -24,7 +24,13 @@ def get_db(path: Path = DB_PATH) -> sqlite3.Connection:
 
 
 def init_db(conn: sqlite3.Connection):
-    conn.executescript(get_latest_schema())
+    for statement in get_latest_schema().split(";"):
+        stmt = statement.strip()
+        if not stmt or "DROP NOT NULL" in stmt.upper():
+            continue
+        conn.execute(stmt)
+
+    conn.commit()
 
 
 def insert_run(conn: sqlite3.Connection, table_name: str, run_data: RunData):

@@ -77,7 +77,8 @@ class RunData:
     p_core_avg_util: float | None  # Avg % utilization across allocated P-cores
     e_core_avg_util: float | None  # Avg % utilization across allocated E-cores
     avg_effective_clock_ghz: (
-        float  # Actual average clock speed during run (catches thermal throttling)
+        float
+        | None  # Actual average clock speed during run (catches thermal throttling)
     )
     avg_ram_usage_mb: float  # Avg RAM used by the training processes
     peak_ram_usage_mb: float  # Peak RAM used by the training processes
