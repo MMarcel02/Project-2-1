@@ -1,0 +1,110 @@
+{
+    "learning_rate": {
+        "active": true, 
+        "sampling": "log_uniform", 
+        "min": 0.0001, 
+        "max": 0.001, 
+        "bins": 5, 
+        "weights": [1, 1, 1, 1, 1]
+    },
+    "batch_size": {
+        "active": true, 
+        "sampling": "choice", 
+        "values": [64, 128, 256, 512], 
+        "weights": [1, 1, 1, 1]
+    },
+    "buffer_size": {
+        "active": true, 
+        "sampling": "choice", 
+        "values": [4096, 8192, 16384, 32768], 
+        "weights": [1, 1, 1, 1]
+    },
+    "beta": {
+        "active": true, 
+        "sampling": "log_uniform", 
+        "min": 0.0005, 
+        "max": 0.01, 
+        "bins": 5, 
+        "weights": [1, 1, 1, 1, 1]
+    },
+    "epsilon": {
+        "active": false, 
+        "sampling": "uniform", 
+        "min": 0.1, 
+        "max": 0.3
+    },
+    "lambd": {
+        "active": false, 
+        "sampling": "uniform", 
+        "min": 0.9, 
+        "max": 0.99
+    },
+    "num_epoch": {
+        "active": true, 
+        "sampling": "choice", 
+        "values": [3, 5, 8, 10], 
+        "weights": [1, 1, 1, 1]
+    },
+    "learning_rate_schedule": {
+        "active": false, 
+        "sampling": "choice", 
+        "values": ["linear", "constant"]
+    },
+    "hidden_units": {
+        "active": true, 
+        "sampling": "choice", 
+        "values": [64, 128, 256], 
+        "weights": [1, 1, 1]
+    },
+    "num_layers": {
+        "active": false, 
+        "sampling": "choice", 
+        "values": [1, 2, 3, 4]
+    },
+    "normalize": {
+        "active": false, 
+        "sampling": "choice", 
+        "values": [true, false]
+    },
+    "gamma": {
+        "active": true, 
+        "sampling": "choice", 
+        "values": [0.95, 0.99, 0.995], 
+        "weights": [1, 1, 1]
+    },
+    "time_horizon": {
+        "active": false, 
+        "sampling": "choice", 
+        "values": [64, 128, 256, 512]
+    },
+    "vis_encode_type": {
+        "active": false, 
+        "sampling": "choice", 
+        "values": ["simple", "nature_cnn"]
+    },
+    "reward_strength": {
+        "active": false, 
+        "sampling": "choice", 
+        "values": [0.5, 1.0, 2.0]
+    },
+    "trainer_type": {
+        "active": false, 
+        "sampling": "fixed", 
+        "value": "ppo"
+    },
+    "max_steps": {
+        "active": false, 
+        "sampling": "fixed", 
+        "value": 500000
+    },
+    "keep_checkpoints": {
+        "active": false, 
+        "sampling": "fixed", 
+        "value": 5
+    },
+    "summary_freq": {
+        "active": false, 
+        "sampling": "fixed", 
+        "value": 12000
+    }
+}

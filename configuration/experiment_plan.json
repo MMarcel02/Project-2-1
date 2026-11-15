@@ -1,92 +1,101 @@
 [
     {
         "experiment_id": 1,
-        "status": "Executing",
-        "hyperparameters": {
-            "learning_rate": 0.001,
+        "status": "Awaiting execution",
+        "research_focus": "RQ3",
+        "adaptability_mode": true,
+        "meaningful_mode": true,
+        "seed": 42,
+        "hardware": {
+            "cpu_cores": 2,
+            "memory_limit_gb": null
+        },
+        "training_parameters": {
             "batch_size": 64,
-            "beta": 0.01
+            "buffer_size": 16384,
+            "learning_rate": 0.000113503,
+            "beta": 0.00514918,
+            "epsilon": 0.2,
+            "lambd": 0.95,
+            "num_epoch": 3,
+            "learning_rate_schedule": "linear",
+            "normalize": true,
+            "hidden_units": 128,
+            "num_layers": 2,
+            "vis_encode_type": "simple",
+            "gamma": 0.95,
+            "reward_strength": 1.0,
+            "time_horizon": 1000,
+            "trainer_type": "ppo",
+            "max_steps": 500000,
+            "keep_checkpoints": 5,
+            "summary_freq": 12000
         }
     },
     {
         "experiment_id": 2,
-        "status": "Executing",
-        "hyperparameters": {
-            "learning_rate": 0.0001,
-            "batch_size": 120,
-            "beta": 0.001
+        "status": "Awaiting execution",
+        "research_focus": "RQ3",
+        "adaptability_mode": true,
+        "meaningful_mode": true,
+        "seed": 42,
+        "hardware": {
+            "cpu_cores": 1,
+            "memory_limit_gb": null
+        },
+        "training_parameters": {
+            "batch_size": 64,
+            "buffer_size": 16384,
+            "learning_rate": 0.000254277,
+            "beta": 0.00189122,
+            "epsilon": 0.2,
+            "lambd": 0.95,
+            "num_epoch": 8,
+            "learning_rate_schedule": "linear",
+            "normalize": true,
+            "hidden_units": 256,
+            "num_layers": 2,
+            "vis_encode_type": "simple",
+            "gamma": 0.95,
+            "reward_strength": 1.0,
+            "time_horizon": 1000,
+            "trainer_type": "ppo",
+            "max_steps": 500000,
+            "keep_checkpoints": 5,
+            "summary_freq": 12000
         }
     },
     {
         "experiment_id": 3,
         "status": "Awaiting execution",
-        "hyperparameters": {
-            "learning_rate": 0.0001,
+        "research_focus": "RQ3",
+        "adaptability_mode": true,
+        "meaningful_mode": true,
+        "seed": 42,
+        "hardware": {
+            "cpu_cores": 4,
+            "memory_limit_gb": null
+        },
+        "training_parameters": {
             "batch_size": 64,
-            "beta": 0.001
-        }
-    },
-    {
-        "experiment_id": 4,
-        "status": "Awaiting execution",
-        "hyperparameters": {
-            "learning_rate": 0.001,
-            "batch_size": 120,
-            "beta": 0.01
-        }
-    },
-    {
-        "experiment_id": 5,
-        "status": "Awaiting execution",
-        "hyperparameters": {
-            "learning_rate": 0.0001,
-            "batch_size": 256,
-            "beta": 0.01
-        }
-    },
-    {
-        "experiment_id": 6,
-        "status": "Awaiting execution",
-        "hyperparameters": {
-            "learning_rate": 0.0001,
-            "batch_size": 256,
-            "beta": 0.005
-        }
-    },
-    {
-        "experiment_id": 7,
-        "status": "Awaiting execution",
-        "hyperparameters": {
-            "learning_rate": 0.001,
-            "batch_size": 120,
-            "beta": 0.001
-        }
-    },
-    {
-        "experiment_id": 8,
-        "status": "Awaiting execution",
-        "hyperparameters": {
-            "learning_rate": 0.0001,
-            "batch_size": 120,
-            "beta": 0.005
-        }
-    },
-    {
-        "experiment_id": 9,
-        "status": "Awaiting execution",
-        "hyperparameters": {
-            "learning_rate": 0.001,
-            "batch_size": 256,
-            "beta": 0.005
-        }
-    },
-    {
-        "experiment_id": 10,
-        "status": "Awaiting execution",
-        "hyperparameters": {
-            "learning_rate": 0.0003,
-            "batch_size": 256,
-            "beta": 0.01
+            "buffer_size": 32768,
+            "learning_rate": 0.00046564,
+            "beta": 0.000962297,
+            "epsilon": 0.2,
+            "lambd": 0.95,
+            "num_epoch": 3,
+            "learning_rate_schedule": "linear",
+            "normalize": true,
+            "hidden_units": 256,
+            "num_layers": 2,
+            "vis_encode_type": "simple",
+            "gamma": 0.99,
+            "reward_strength": 1.0,
+            "time_horizon": 1000,
+            "trainer_type": "ppo",
+            "max_steps": 500000,
+            "keep_checkpoints": 5,
+            "summary_freq": 12000
         }
     }
 ]

@@ -1,0 +1,179 @@
+
+{
+  "learning_rate": {
+    "section": "hyperparameters",
+    "sampling": "log_uniform",
+    "min": 0.0001,
+    "max": 0.001,
+    "meaningful": true,
+    "randomizable": true,
+    "priority": 1,
+    "unlock_after": 0
+  },
+  "batch_size": {
+    "section": "hyperparameters",
+    "sampling": "choice",
+    "values": [64, 128, 256, 512],
+    "meaningful": true,
+    "randomizable": true,
+    "priority": 1,
+    "unlock_after": 0
+  },
+  "buffer_size": {
+    "section": "hyperparameters",
+    "sampling": "choice",
+    "values": [4096, 8192, 16384, 32768],
+    "meaningful": true,
+    "randomizable": true,
+    "priority": 1,
+    "unlock_after": 0
+  },
+  "beta": {
+    "section": "hyperparameters",
+    "sampling": "log_uniform",
+    "min": 0.0005,
+    "max": 0.01,
+    "meaningful": true,
+    "randomizable": true,
+    "priority": 1,
+    "unlock_after": 0
+  },
+  "epsilon": {
+    "section": "hyperparameters",
+    "sampling": "uniform",
+    "min": 0.1,
+    "max": 0.3,
+    "meaningful": true,
+    "randomizable": true,
+    "priority": 2,
+    "unlock_after": 150
+  },
+  "lambd": {
+    "section": "hyperparameters",
+    "sampling": "uniform",
+    "min": 0.9,
+    "max": 0.99,
+    "meaningful": true,
+    "randomizable": true,
+    "priority": 2,
+    "unlock_after": 150
+  },
+  "num_epoch": {
+    "section": "hyperparameters",
+    "sampling": "choice",
+    "values": [3, 5, 8, 10],
+    "meaningful": true,
+    "randomizable": true,
+    "priority": 1,
+    "unlock_after": 0
+  },
+  "learning_rate_schedule": {
+    "section": "hyperparameters",
+    "sampling": "choice",
+    "values": ["linear", "constant"],
+    "meaningful": true,
+    "randomizable": true,
+    "priority": 3,
+    "unlock_after": 300
+  },
+  "hidden_units": {
+    "section": "network_settings",
+    "sampling": "choice",
+    "values": [64, 128, 256],
+    "meaningful": true,
+    "randomizable": true,
+    "priority": 1,
+    "unlock_after": 0
+  },
+  "num_layers": {
+    "section": "network_settings",
+    "sampling": "choice",
+    "values": [1, 2, 3, 4],
+    "meaningful": true,
+    "randomizable": true,
+    "priority": 2,
+    "unlock_after": 150
+  },
+  "normalize": {
+    "section": "network_settings",
+    "sampling": "choice",
+    "values": [true, false],
+    "meaningful": true,
+    "randomizable": true,
+    "priority": 3,
+    "unlock_after": 300
+  },
+  "gamma": {
+    "section": "reward_signals.extrinsic",
+    "sampling": "choice",
+    "values": [0.95, 0.99, 0.995],
+    "meaningful": true,
+    "randomizable": true,
+    "priority": 1,
+    "unlock_after": 0
+  },
+  "time_horizon": {
+    "section": "behavior",
+    "sampling": "choice",
+    "values": [64, 128, 256, 512],
+    "meaningful": true,
+    "randomizable": true,
+    "priority": 2,
+    "unlock_after": 150
+  },
+  "vis_encode_type": {
+    "section": "network_settings",
+    "sampling": "choice",
+    "values": ["simple", "nature_cnn"],
+    "meaningful": false,
+    "randomizable": true,
+    "priority": null,
+    "unlock_after": null
+  },
+  "reward_strength": {
+    "section": "reward_signals.extrinsic",
+    "yaml_key": "strength",
+    "sampling": "choice",
+    "values": [0.5, 1.0, 2.0],
+    "meaningful": false,
+    "randomizable": true,
+    "priority": null,
+    "unlock_after": null
+  },
+  "trainer_type": {
+    "section": "behavior",
+    "sampling": "fixed",
+    "value": "ppo",
+    "meaningful": false,
+    "randomizable": false,
+    "priority": null,
+    "unlock_after": null
+  },
+  "max_steps": {
+    "section": "behavior",
+    "sampling": "fixed",
+    "value": 500000,
+    "meaningful": false,
+    "randomizable": false,
+    "priority": null,
+    "unlock_after": null
+  },
+  "keep_checkpoints": {
+    "section": "behavior",
+    "sampling": "fixed",
+    "value": 5,
+    "meaningful": false,
+    "randomizable": false,
+    "priority": null,
+    "unlock_after": null
+  },
+  "summary_freq": {
+    "section": "behavior",
+    "sampling": "fixed",
+    "value": 12000,
+    "meaningful": false,
+    "randomizable": false,
+    "priority": null,
+    "unlock_after": null
+  }
+}

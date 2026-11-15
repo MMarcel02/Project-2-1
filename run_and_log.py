@@ -408,7 +408,15 @@ def main():
         id=str(uuid4()),
         name=name,
         machine_id=machine,
-        experiment_type=run_data_model.ExperimentType.TEST_ONLY.value,
+        experiment_type=( # Ensures the right experiment type is loaded into supabase
+            {
+                "RQ1": run_data_model.ExperimentType.ALTER_HARDWARE.value,
+                "RQ2": run_data_model.ExperimentType.ALTER_PARAMETERS.value,
+                "RQ3": run_data_model.ExperimentType.ALTER_BOTH.value,
+            }[experiment["research_focus"]]
+            if experiment is not None
+            else run_data_model.ExperimentType.TEST_ONLY.value
+        ),
         os_name=platform.system(),
 
         #hardware specs dynamically detected

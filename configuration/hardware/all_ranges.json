@@ -1,0 +1,20 @@
+{
+  "cpu_cores": {
+    "section": "hardware",
+    "sampling": "choice",
+    "values": [1, 2, 4],
+    "meaningful": true,
+    "randomizable": true,
+    "priority": 1,
+    "unlock_after": 0
+  },
+  "memory_limit_gb": {
+    "section": "hardware",
+    "sampling": "choice",
+    "values": [4, 8, 16],
+    "meaningful": true,
+    "randomizable": true,
+    "priority": 2,
+    "unlock_after": 150
+  }
+}

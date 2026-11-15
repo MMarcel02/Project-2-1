@@ -1,0 +1,14 @@
+{
+  "cpu_cores": {
+    "sampling": "choice",
+    "values": [1, 2, 4],
+    "weights": [1, 1, 1],
+    "active": true
+  },
+  "memory_limit_gb": {
+    "sampling": "choice",
+    "values": [4, 8, 16],
+    "weights": [1, 1, 1],
+    "active": false
+  }
+}
