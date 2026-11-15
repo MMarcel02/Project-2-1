@@ -236,7 +236,7 @@ def run_training(experiment):
     if experiment is not None:
         experiment_id = experiment["experiment_id"]
         update_experiment_status(experiment_id=experiment_id, new_status="Executing")
-        generate_config(**experiment["hyperparameters"])
+        generate_config(**experiment["training_parameters"])
 
     run_id = (
         f"3DBallHard_"
