@@ -1,0 +1,5 @@
+# keys as they appear in the database
+
+"cpu_p_core_max_ghz": 4.7
+"ram_speed_mhz": 4800
+"ram_type": "DDR5"

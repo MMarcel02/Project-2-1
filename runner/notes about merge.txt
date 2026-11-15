@@ -1,0 +1,66 @@
+1.although passes `tests` from an AI, this needs to be tested (and better yet have unit test)
+2.some features from my original script are not implemented but everything else should be there
+3.there are some placeholders for some stuff since things need to be implemented (convergence for example)
+4.tried to document everything but if there are any questions feel free to ask the thing that's making RAM expensive :D
+
+you need to have a folder 'builds' and folders 'windows'/'linux'/'macos' inside it (at the project root), where you/we place the builds. The correct build is selected and used based on the OS of the system executing the code:
+so visually:
+Project-2-1/
+├── builds/
+│   ├── linux/
+│   │   └── 3DBall.x86_64
+│   ├── macos/
+│   │   └── 3DBall.app
+│   └── windows/
+│       └── 3DBall.exe
+├── runner/
+│   ├── configs/
+│   │   ├── training/
+│   │   │   ├── 3DBall.yaml              # training hyperparameters (default --config)
+│   │   │   └── ...
+│   │   └── machine_overrides.yaml       # optional, per machine, not committed
+│   ├── run_and_log.py
+│   └── ...
+├── storage/
+│   ├── runs.db                          # local database (created on first save)
+│   └── ...
+└── ...
+
+
+executing a training is as simple as:
+(needs activated virtual environment)
+python ./runner/run_and_log.py
+since i am using uv (a package manager and more), the command:
+uv run ./runner/run_and_log.py
+
+
+overall features from the merges:
+0.project-root-relative paths
+1.running a build headless
+2.Command-line options with defaults
+3.choosing the build according to the OS (now builds live in a builds/<os-name> folder)
+4.checks before training: config and build exist, NAME/MACHINE set, hardware overrides valid
+5.live CPU and RAM measurement of ML-Agents and the Unity build, plus background CPU; loading time excluded and fixed the issue where i got garbage measurements
+6.automatic hardware specs detection (with an optional overrides file (name and type checked))
+7.training results: rewards, exact steps, throughput
+8.recording the hyperparameters ML-Agents actually used, with a completeness check against the database columns
+9.safe stopping - Ctrl+C (and SIGTERM on Linux/Docker) saves the model; interrupted runs are marked and not saved
+10.printed summary in the terminal after a run
+11.automatic save to the local database for finished runs
+12.listing possible reasons why a run wasn't saved
+13.manual upload to supabase with sync_to_cloud.py (i had this from before - not tested)
+
+what needs to be implemented:
+1.i had this before: a csv backup when training failed
+2.convergence (early stopping and replacing placeholders)
+3.FOR DISCUSSION: how multiple training runs will be performed
+4.P-/E-core detection (not automatic yet (use the overrides atm); possible with per OS system call, also works for automatic RAM type/speed detection)
+5.the per P-/E-core use and mean clock speed
+6.CPU measurements relative to allocated cores - i am not sure how the current implementation would behave in docker
+7.(optional) since we care about measurements auto-deleting the produced brains after training
+8.the automatic hyperparameters script to be tested with this code, or perhaps integrated
+
+for refactoring:
+even though i tried to make it as clean and understandable as possible there is still work to be done
+9.splitting the run_and_log into smaller modules
+10.test actual supabase upload/download syncing and perhaps race conditions
