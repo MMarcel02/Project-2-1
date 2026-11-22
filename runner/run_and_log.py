@@ -3,24 +3,28 @@
 import argparse
 import os
 import random
+import sqlite3
 import subprocess
 import sys
 import threading
 import time
+from collections.abc import Sequence
 from dataclasses import dataclass
 from pathlib import Path
 from signal import SIGINT, SIGTERM, signal
 
 import psutil
+import yaml
 from dotenv import load_dotenv
-
-import machine_specs
-import mlagents_output
 
 ROOT = Path(__file__).resolve().parent.parent
 sys.path.insert(0, str(ROOT))
 
 from storage.run_data_model import ExperimentType
+
+import machine_specs
+import mlagents_output
+import training_record
 
 BUILDS = {
     "win32": Path("windows") / "3DBall.exe",
@@ -30,10 +34,12 @@ BUILDS = {
 
 DEFAULT_UNITY_BUILD_PATH = ROOT / "builds" / BUILDS.get(sys.platform, BUILDS["linux"])
 DEFAULT_TRAINING_CONFIG_PATH = ROOT / "runner" / "configs" / "training" / "3DBall.yaml"
+DEFAULT_DATABASE_PATH = ROOT / "storage" / "runs.db"
 RESULTS_DIR_PATH = ROOT / "results"
 
 EXIT_MESSAGE = "Stopping, please wait..."
 
+MAX_SEED = 2**31 - 1
 MEASURE_INTERVAL_S = 1  # measure once this many seconds
 CPU_COUNT = psutil.cpu_count() or 1  # logical cores (threads); 'or 1' when unknown
 TRAINING_STARTED = "Connected new brain"
@@ -75,21 +81,29 @@ class TrainingResult:
 
 def show_project_relative(path: Path) -> Path:
     """show path as <project_root>/..., with the OS's separator"""
-    return Path("<project_root>") / path.relative_to(ROOT)
+    try:
+        return Path("<project_root>") / path.relative_to(ROOT)
+    except ValueError:
+        return path
 
 
 def parse_args() -> argparse.Namespace:
     """Create CLI-like arguments (with default values, type safety and documentation),
     then build and return them"""
     generated_run_id = "train_" + time.strftime("%Y%m%d_%H%M%S")
-    generated_seed = random.randint(0, 2**31 - 1)
 
-    parser = argparse.ArgumentParser(description="Run one ML-Agents training")
+    parser = argparse.ArgumentParser(
+        description="Run ML-Agents trainings, one per config"
+    )
     parser.add_argument(
         "--config",
         type=Path,
-        default=DEFAULT_TRAINING_CONFIG_PATH,
-        help=f"path to training config (YAML) (default: {show_project_relative(DEFAULT_TRAINING_CONFIG_PATH)})",
+        nargs="+",  # one or more values
+        default=[DEFAULT_TRAINING_CONFIG_PATH],
+        help=(
+            "training config(s): (1+) YAML files and/or folder(s); a folder means all its *.yaml files, in name order"
+            f" (default: {show_project_relative(DEFAULT_TRAINING_CONFIG_PATH)})"
+        ),
     )
     parser.add_argument(
         "--env",
@@ -105,8 +119,19 @@ def parse_args() -> argparse.Namespace:
     parser.add_argument(
         "--seed",
         type=int,
-        default=generated_seed,
-        help="random seed (default: a random number)",
+        default=None,
+        help="the first seed for same/increment seed modes, or the seed used for randomizing training seeds (default: random number between 0 and 2147483647)",
+    )
+    parser.add_argument(
+        "--seed-mode",
+        choices=["same", "increment", "random"],
+        default="same",
+        help=(
+            "same: every run uses --seed;"
+            " increment: run 1 uses --seed, run 2 --seed + 1, ...;"
+            " random: a new random seed generated per run (default: same);"
+            " if --seed is not specified, random --seed will be used"
+        ),
     )
     parser.add_argument(
         "--graphics",
@@ -133,22 +158,139 @@ def read_identity() -> tuple[str, str]:
 
 
 def check_paths(args: argparse.Namespace) -> None:
-    """Stops executing further if the unity build or the training config don't exist"""
-    for path in [args.config, args.env]:
-        if not path.exists():
+    """Stops if the unity build doesn't exist; configs are now checked by `collect_configs()`"""
+    args.env = args.env.resolve()
+    if not args.env.exists():
+        sys.exit(f"Not found: {args.env.resolve()}")
+
+
+def collect_configs(paths: list[Path]) -> list[Path]:
+    """Retrieves all config files for training: files as they are,
+    for folders searches for *.yaml files"""
+    configs: list[Path] = []
+    for path in paths:
+        if path.is_dir():
+            found = sorted(path.glob("*.yaml"))
+            if not found:
+                sys.exit(f"No .yaml files in {path.resolve()}")
+            configs.extend(found)  # append all items from list to another list
+        elif path.is_file():
+            configs.append(path)
+        else:
             sys.exit(f"Not found: {path.resolve()}")
 
+    by_name: dict[str, list[Path]] = {}
+    for config in configs:
+        # <Path>.stem keeps the file name without extension
+        by_name.setdefault(config.stem, []).append(config)
 
-def build_command(args: argparse.Namespace) -> list[str]:
+    duplicates = {name: paths for name, paths in by_name.items() if len(paths) > 1}
+    if duplicates:
+        name_path_lines = [
+            f"  {name}: {', '.join(str(path) for path in paths)}"
+            for name, paths in sorted(duplicates.items())
+        ]
+        sys.exit(
+            "Config file names must be unique (they are part of the run_id)"
+            "\nduplicates:\n" + "\n".join(name_path_lines)
+        )
+    return [config.resolve() for config in configs]
+
+
+def read_behavior_name(config: Path) -> str:
+    """Retrieves the behavior name of a training config; stops if unable to read file, or improper config"""
+    try:
+        with open(config, encoding="utf-8") as file:
+            content = yaml.safe_load(file)
+    except OSError as error:
+        sys.exit(f"Cannot read {config}: {error}")
+    except yaml.YAMLError as error:
+        sys.exit(f"{config} is not valid YAML: {error}")
+
+    behaviors = content.get("behaviors") if isinstance(content, dict) else None
+    if not isinstance(behaviors, dict) or len(behaviors) != 1:
+        sys.exit(
+            f"{config} must define exactly one behavior; found: {len(behaviors or {})}"
+        )
+
+    name = next(iter(behaviors))
+    settings = behaviors[name] or {}
+    if not isinstance(settings, dict):
+        sys.exit(
+            f"{show_project_relative(config)}: the settings of {name} must be 'name: value' lines"
+        )
+    for key in ("summary_freq", "max_steps", "time_horizon"):
+        value = settings.get(key)
+        if value is not None and (not isinstance(value, int) or value <= 0):
+            sys.exit(
+                f"{show_project_relative(config)}:{key} must be whole number above 0; found {value!r}"
+            )
+
+    return name  # the name of the single behavior
+
+
+def check_configs(configs: list[Path]) -> str:
+    """Checks if all configs are for the same behavior; Returns the behavior's name"""
+    expected = read_behavior_name(
+        configs[0]
+    )  # set the first config as expected behavior
+    for config in configs[1:]:
+        name = read_behavior_name(config)
+        if name != expected:
+            sys.exit(
+                "All configs must be for the same behavior:\n"
+                f" expected behavior is {expected} (from {configs[0]})\n"
+                f" {config} is for {name}\n"
+            )
+    return expected
+
+
+def check_build_matches(env: Path, behavior: str) -> None:
+    """IMPORTANT: assumes builds are named after the behavior inside them (builds/.../3DBall.exe -> 3DBall)
+
+    Stops if the unity build name doesn't match the config's behavior
+    """
+    build_name = env.stem
+    if build_name != behavior:
+        sys.exit(
+            f"The provided configs are for behavior {behavior}, but the build is {env.name} (behavior {build_name})"
+        )
+
+
+def seeds_for_runs(first: int | None, mode: str, count: int) -> list[int]:
+    """Produces the seeds for each run"""
+    if first is not None and not 0 <= first <= MAX_SEED:
+        sys.exit(
+            f"--seed must be between 0 and {MAX_SEED} (inclusive for both); got {first}"
+        )
+    if mode == "random":
+        generator = random.Random(first)
+        return [generator.randint(0, MAX_SEED) for _ in range(count)]
+
+    if first is None:
+        first = random.randint(0, MAX_SEED - count + 1)
+    if mode == "same":
+        return [first] * count
+    seeds = list(range(first, first + count))
+    if seeds[-1] > MAX_SEED:
+        sys.exit(
+            f"--seed {first} + {count - 1} runs goes beyond {MAX_SEED}; use a smaller --seed"
+        )
+    return seeds
+
+
+def build_command(
+    args: argparse.Namespace, config: Path, run_id: str, seed: int
+) -> list[str]:
     """Builds a complete ML-Agents command from the passed arguments ready to execute"""
     command = [
         sys.executable,
         "-m",
         "mlagents.trainers.learn",
-        str(args.config),
+        str(config),
         f"--env={args.env}",
-        f"--run-id={args.run_id}",
-        f"--seed={args.seed}",
+        f"--run-id={run_id}",
+        f"--seed={seed}",
     ]
     if not args.graphics:
         command.append("--no-graphics")
@@ -171,10 +313,13 @@ def start_mlagents(command: list[str]) -> psutil.Popen:
     )
 
 
-def install_stop_handlers(process: psutil.Popen) -> threading.Event:
-    """Provides safe stop/terminate logic, and records if it has occured"""
+def install_stop_handlers(
+    process: psutil.Popen, stop_requested: threading.Event
+) -> None:
+    """Provides safe stop/terminate logic, and records if it has occured
 
-    stop_requested = threading.Event()
+    For mutliple training runs stops the whole batch
+    """
 
     def on_keyboard_interrupt(signum, frame):
         stop_requested.set()
@@ -183,12 +328,14 @@ def install_stop_handlers(process: psutil.Popen) -> threading.Event:
     def on_terminate(signum, frame):
         stop_requested.set()
         print(EXIT_MESSAGE)
-        process.send_signal(SIGINT)
+        try:
+            process.send_signal(SIGINT)
+        except psutil.Error:
+            pass
 
     signal(SIGINT, on_keyboard_interrupt)
     if sys.platform != "win32":
         signal(SIGTERM, on_terminate)
-    return stop_requested
 
 
 def forward_output(
@@ -283,7 +430,9 @@ class ResourceSampler:
             pass
 
 
-def execute_training(command: list[str], run_id: str) -> TrainingResult:
+def execute_training(
+    command: list[str], run_id: str, stop_requested: threading.Event
+) -> TrainingResult:
     """Runs single ML-agents training and measures it
 
     Returns:
@@ -295,7 +444,7 @@ def execute_training(command: list[str], run_id: str) -> TrainingResult:
 
     start = time.perf_counter()
     process = start_mlagents(command)
-    stop_requested = install_stop_handlers(process)
+    install_stop_handlers(process, stop_requested)
 
     summaries: list[mlagents_output.RewardSummary] = []
     reader, training_started = start_output_reader(process, summaries)
@@ -340,10 +489,20 @@ def format_stats(samples: list[float], unit: str) -> str:
     return f"mean {average:.1f}{unit}, peak {max(samples):.1f}{unit}"
 
 
-def format_table(rows: list[tuple[str, object]]) -> str:
+def format_columns(rows: Sequence[tuple[str, object]]) -> str:
     """Lines of 'label:  value' with the values lined up, e.g. [("run id", "train_1"), ("steps", 36009)]"""
     width = max(len(label) for label, _ in rows) + 1  # +1 for the colon
     return "\n".join(f"{label + ':':<{width}}  {value}" for label, value in rows)
+
+
+def format_table(rows: Sequence[Sequence[object]], separator: str = " | ") -> str:
+    """Creates a dynamically generated table and returns it"""
+    texts = [[str(cell) for cell in row] for row in rows]
+    widths = [max(len(cell) for cell in column) for column in zip(*texts)]
+    return "\n".join(
+        separator.join(cell.ljust(width) for cell, width in zip(row, widths)).rstrip()
+        for row in texts
+    )
 
 
 def print_summary(result: TrainingResult, specs: machine_specs.HardwareSpecs) -> None:
@@ -389,28 +548,130 @@ def print_summary(result: TrainingResult, specs: machine_specs.HardwareSpecs) ->
         )
     rows.append(("interrupted", result.interrupted))
     print("--- Training ---")
-    print(format_table(rows))
+    print(format_columns(rows))
     print("\n--- Hardware ---")
     print(machine_specs.get_summary(specs))
+
+
+def print_batch_summary(
+    configs: list[Path], outcomes: list[tuple[Path, int, TrainingResult, bool]]
+) -> None:
+    """Displays the summary of all executed trainings"""
+
+    rows: list[tuple[object, ...]] = [
+        ("config", "seed", "status", "throughput", "final reward")
+    ]
+    for config, seed, result, saved in outcomes:
+        if saved:
+            status = "saved"
+        elif result.interrupted:
+            status = "stopped, not saved"
+        else:
+            status = f"not saved (exit code {result.exit_code})"
+        throughput = (
+            f"{result.step_throughput:.0f} steps/s"
+            if result.step_throughput is not None
+            else "-"
+        )
+        final_reward = (
+            f"{result.summaries[-1].mean_reward:.3f}" if result.summaries else "-"
+        )
+        rows.append((config.stem, seed, status, throughput, final_reward))
+
+    for config in configs[len(outcomes) :]:
+        rows.append((config.stem, "-", "skipped", "-", "-"))
+
+    print(f"\n----- Batch: {len(outcomes)} of {len(configs)} run(s) -----")
+    print(format_table(rows))
+
+
+def record_run(
+    result: TrainingResult,
+    specs: machine_specs.HardwareSpecs,
+    *,  # pass next arguments by name (positional passing is forbidden)
+    name: str,
+    machine: str,
+    experiment_type: str,
+    seed: int,
+) -> bool:
+    """Saves recorded metrics after a finished run to local database;
+    if it fails prints why; returns True if successful, False otherwise
+    """
+    reasons = training_record.get_reasons_for_failed_save(result)
+    if reasons:
+        print(f"\nNot saved to the database: {'; '.join(reasons)}")
+        return False
+    row = training_record.build_run_data(
+        result,
+        specs,
+        name=name,
+        machine=machine,
+        experiment_type=experiment_type,
+        seed=seed,
+    )
+    try:
+        training_record.save_to_database(row)
+    except sqlite3.Error as error:
+        print(f"\nCould not save to the database: {error}")
+        return False
+    print(
+        f"\nSaved to the database {show_project_relative(DEFAULT_DATABASE_PATH)} as {row.id}"
+    )
+    return True
 
 
 def main():
     args: argparse.Namespace = parse_args()
     check_paths(args)
+    configs = collect_configs(args.config)
+    behavior = check_configs(configs)
+    check_build_matches(args.env, behavior)
+    print(f"Configs ({len(configs)}), behavior {behavior}:")
+    for config in configs:
+        print(f"  {config}")
     name, machine = read_identity()
+
+    seeds = seeds_for_runs(args.seed, args.seed_mode, len(configs))
 
     try:
         hardware = machine_specs.read_specs()
     except (ValueError, TypeError) as error:
         sys.exit(f"Problem in machine_overrides.yaml: {error}")
 
-    command: list[str] = build_command(args)
-    print("Running:\n" + "\n".join(command))
-    result = execute_training(command, args.run_id)
+    stop_requested = threading.Event()
+    results: list[tuple[Path, int, TrainingResult, bool]] = []
+    for number, (config, seed) in enumerate(zip(configs, seeds), start=1):
+        if stop_requested.is_set():
+            remaining = len(configs) - number + 1
+            print(
+                f"\nStopped by request: {number - 1} of {len(configs)} runs completed, {remaining} config(s) skipped"
+            )
+            break
+        run_id = f"{args.run_id}_{config.stem}"
+        print(
+            f"\n----- Run {number}/{len(configs)}: {show_project_relative(config)} (run id {run_id}, seed {seed}) -----"
+        )
 
-    print(f"\nUser: {name} on {machine}, experiment type: {args.experiment_type}")
-    print_summary(result, hardware)
-    sys.exit(result.exit_code)
+        command = build_command(args, config, run_id, seed)
+        print("Running:\n" + "\n".join(command))
+        result = execute_training(command, run_id, stop_requested)
+
+        print(f"\nUser: {name} on {machine}, experiment type: {args.experiment_type}")
+        print_summary(result, hardware)
+        saved_record = record_run(
+            result,
+            hardware,
+            name=name,
+            machine=machine,
+            experiment_type=args.experiment_type,
+            seed=seed,
+        )
+        results.append((config, seed, result, saved_record))
+
+    print_batch_summary(configs, results)
+    all_saved = len(results) == len(configs) and all(saved for *_, saved in results)
+
+    sys.exit(0 if all_saved else 1)
 
 
 if __name__ == "__main__":
