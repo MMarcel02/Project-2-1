@@ -32,7 +32,7 @@ RESEARCH_QUESTION_FOCUS = "RQ3"
 DEFAULT_HARDWARE = {
     "cpu_cores": 4,
     "memory_limit_gb": None
-} # TODO: Add the additional hardware features
+} # TODO: Add the additional hardware features here and in hardware.all_ranges.json and current_ranges.json
 
 
 def generate_config(**training_parameters):
@@ -135,29 +135,53 @@ def sample_parameters(rng, all_ranges_path, current_ranges_path):
 
     return selected
 
-def generate_experiment_plan(count=25, seed=42):
+def generate_experiment_plan(count=25, seed=None):
 
     if not 1 <= count <= MAX_EXPERIMENT_PLAN_SIZE:
         raise ValueError(f"Count must be between 1 and {MAX_EXPERIMENT_PLAN_SIZE}")
+
+    if seed is None:
+        seed = random.SystemRandom().randrange(2**63)
     
     rng = random.Random(seed)
 
     if RESEARCH_QUESTION_FOCUS not in ("RQ1", "RQ2", "RQ3"):
         raise ValueError(f"Invalid focus: {RESEARCH_QUESTION_FOCUS}")
 
-    if PLAN_PATH.exists():
+    if can_reset_plan():
+        experiments = []
+        add_count = count
+
+    elif PLAN_PATH.exists():
         with open(PLAN_PATH, "r", encoding="utf-8") as file:
-            experiments = json.load(file)
+            all_experiments = json.load(file)
+            experiments = []
+
+            for experiment in all_experiments:
+                if experiment["status"] not in ("Done", "Failure"):
+                    experiments.append(experiment)
+
+            add_count = max(0, count - len(experiments))
+
     else:
         experiments = []
+        add_count = count
 
-    next_id = max(
-        (experiment["experiment_id"] for experiment in experiments),
-        default=0
-    ) + 1
+    index = 1
+    generated_count = 0
+    while generated_count < add_count:
 
+        id_exists = False
 
-    for index in range(next_id, next_id + count):
+        for experiment in experiments:
+            if experiment["experiment_id"] == index:
+                id_exists = True
+                break
+
+        if id_exists:
+            index +=1
+            continue
+
         hardware = DEFAULT_HARDWARE.copy()
         training_parameters = get_default_training_parameters()
 
@@ -183,11 +207,15 @@ def generate_experiment_plan(count=25, seed=42):
             "research_focus": RESEARCH_QUESTION_FOCUS,
             "adaptability_mode": ADAPTABILITY_MODE,
             "meaningful_mode": MEANINGFUL_MODE,
-            "seed": seed,
+            "sampling_seed": seed,
             "hardware": hardware,
             "training_parameters": training_parameters
         })
 
+        generated_count += 1
+        index += 1
+
+    experiments.sort(key=lambda experiment: experiment["experiment_id"])
 
     with open(PLAN_PATH, "w", encoding="utf-8") as file:
         json.dump(experiments, file, indent=4)
@@ -232,6 +260,21 @@ def get_next_experiment():
 
         return min(pending_experiments, key=lambda experiment: experiment["experiment_id"])
 
+def can_reset_plan():
+    if not PLAN_PATH.exists():
+        return True
+
+    with open(PLAN_PATH, "r", encoding="utf-8") as file:
+        experiments = json.load(file)
+
+    end_statuses = {"Done", "Failure"}
+
+    for experiment in experiments:
+        if experiment["status"] not in end_statuses:
+            return False
+
+    return True
+
 def update_experiment_status(experiment_id, new_status):
 
     with open(PLAN_PATH, "r", encoding="utf-8") as file:
@@ -254,13 +297,4 @@ def update_experiment_status(experiment_id, new_status):
 
 
 if __name__ == "__main__":
-
-    experiment = get_next_experiment()
-
-    if experiment is None:
-        print("No experiments awaiting execution.")
-    else:
-        config_path = generate_config(**experiment["training_parameters"])
-
-        print(f"Selected experiment: {experiment['experiment_id']}")
-        print(f"Generated configuration: {config_path}")
+    generate_experiment_plan(count=10)
